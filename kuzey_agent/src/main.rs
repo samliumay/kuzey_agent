@@ -1,62 +1,63 @@
-mod clients;
-
+mod providers;
+ 
 use std::io;
+use inquire::{Select, MultiSelect, Password, PasswordDisplayMode};
+use providers::ProviderKind;
+use providers::ProviderConfig;
+use providers::send;
 
-struct provider {
-    model: String,
-    temp: f64,
-    top_p: u64,
-    top_k: u64,
-    API_key: String,
-}
 
-enum PossibleProviders {
-    ollama(provider),
-    anthropic(provider),
-    google(provider),
-    openai(provider),
-}
+#[tokio::main]
+async fn main() {
 
-fn detecting_the_provider(provider_name: &str){
-}
 
-fn main() {
+    let all_providers: Vec<&str> = vec!["ollama","google","openai","anthropic"];
 
     println!("Kuzey Agent 0.1.0");
+    
+    let provider_type= Select::new("Which provider are you going with!", all_providers)
+        .prompt()
+        .unwrap();
 
-    loop {
+    println!("Selected {provider_type}");
+    
+    let kind = match provider_type {
+        "ollama" => ProviderKind::Ollama,
+        "google" => ProviderKind::Google,
+        "openai" => ProviderKind::OpenAI,
+        "anthropic" => ProviderKind::Anthropic,
+        _ => unreachable!("Select only returns item from the list")
+    };
 
-        println!("Please enter what provider you will use: ");
+    let mut api_key = Password::new("Please enter your API key:")
+        .with_display_mode(PasswordDisplayMode::Masked)
+        .without_confirmation()
+        .prompt()
+        .unwrap();
 
-        let mut your_input = String::new();
+    let all_google_models: Vec<&str> = vec!["models/gemini-3.8-flash"];
 
-        io::stdin()
-            .read_line(&mut your_input)
-            .expect("Failed to read the line!");
+    let model_type = Select::new("Which model you want to use!", all_google_models)
+        .prompt()
+        .unwrap();
 
-        //Match with detecting the provider should return spesific enum at provider. with the
-        //required config with the controls of unvalid variable. 
+    let model_type = model_type.to_string();
 
-        //Needs to be implemented
-        println!("Please enter the configs you want.");
+    let providerDetails = ProviderConfig::new(kind, model_type, Some(api_key));
 
+    println!("Enter your first prompt!");
+    let mut prompt = String::new();
 
-        let user_input = your_input.trim();
+    io::stdin()
+        .read_line(&mut prompt)
+        .expect("failed to read the line.");
+    
+    let results:Result<String, Box<dyn std::error::Error>> = providers::send(&providerDetails, &prompt).await;
+    
+    match results{
+        Ok(text) => println!("{text}"),
+        Err(e) => println!("Error {e}"),
+    };
+    
 
-        println!("Currently the agent is under construction. But we can print what you wrote");
-        println!("{user_input}");
-
-        match user_input {
-            "/exit" => {
-                println!("exiting...");
-                break;
-            },
-
-            _ => {
-                println!("Unknown command. Your command: {user_input}");
-            }
-        }
-
-        
-    }
 }
