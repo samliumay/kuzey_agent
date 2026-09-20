@@ -5,3 +5,5 @@ edition = "2024"
 
 [dependencies]
 gemini-rust="2.0.0"
+inquire = "0.9.4"
+tokio={version="1", features=["full"]}
