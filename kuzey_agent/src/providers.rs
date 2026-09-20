@@ -1,4 +1,7 @@
 mod google;
+mod ollama;
+mod anthropic;
+mod openai;
 
 //Current Google is under construction.
 pub enum ProviderKind {
@@ -8,13 +11,14 @@ pub enum ProviderKind {
     OpenAI
 }
 
+// We can change the f32 part. needs a performace resarch. 
 pub struct ProviderConfig {
 
     pub kind: ProviderKind,
     pub model: String,
-    pub temp: f64,
-    pub top_p: f64,
-    pub top_k: u64,
+    pub temp: f32,
+    pub top_p: f32,
+    pub top_k: u32,
     pub api_key: Option<String>,
 }
 

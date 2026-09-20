@@ -10,7 +10,7 @@ use providers::send;
 #[tokio::main]
 async fn main() {
 
-
+    //Problmematic desing performance and architecture wise. Needs to chjange.
     let all_providers: Vec<&str> = vec!["ollama","google","openai","anthropic"];
 
     println!("Kuzey Agent 0.1.0");
@@ -35,6 +35,9 @@ async fn main() {
         .prompt()
         .unwrap();
 
+    // Same problem for here. maybe with a constructor or something like that but this is really
+    // problematic design to go with. Its basically wrong and will create trouble at more
+    // integrations. 
     let all_google_models: Vec<&str> = vec!["models/gemini-3.8-flash"];
 
     let model_type = Select::new("Which model you want to use!", all_google_models)
