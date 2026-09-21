@@ -1,10 +1,10 @@
-use super::ProviderConfig;
-
-pub(super) async fn send(config: &ProviderConfig, prompt: &str) -> Result<String, Box<dyn std::error::Error>>  {
+use super::{ProviderConfig, ChatMessage, Role};
 
 
-    
-    Ok(String::from("will be implemented."))
+#[allow(deprecated)]
+pub(super) async fn send(config: &ProviderConfig, history: &[ChatMessage]) -> Result<String, Box<dyn std::error::Error>>{
+
+    Ok(String::from("will be implemented"))
 
 }
 

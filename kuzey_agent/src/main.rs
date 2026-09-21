@@ -1,11 +1,8 @@
 mod providers;
  
 use std::io;
-use inquire::{Select, Password, PasswordDisplayMode};
-use providers::ProviderKind;
-use providers::ProviderConfig;
-use providers::send;
-use providers::AvailableProviderAndModels;
+use inquire::{Select, Password, PasswordDisplayMode, Text};
+use providers::{ProviderKind, ProviderConfig, send, AvailableProviderAndModels, ChatMessage, Role};
 
 #[tokio::main]
 async fn main() {
@@ -74,19 +71,44 @@ async fn main() {
 
     let providerDetails = ProviderConfig::new(kind, model_type, Some(api_key));
 
-    println!("Enter your first prompt!");
-    let mut prompt = String::new();
+    let mut history: Vec<ChatMessage> = Vec::new();
 
-    io::stdin()
-        .read_line(&mut prompt)
-        .expect("failed to read the line.");
-    
-    let results:Result<String, Box<dyn std::error::Error>> = providers::send(&providerDetails, &prompt).await;
-    
-    match results{
-        Ok(text) => println!("{text}"),
-        Err(e) => println!("Error {e}"),
-    };
-    
+    loop {
+        
+        let input = Text::new("You:").prompt().unwrap();
+        let input = input.trim();
+
+        if input.is_empty(){
+            continue;
+        }
+
+        if input == "/exit" {
+            println!("Exiting...");
+            break;
+        }
+
+        history.push(
+            ChatMessage {
+                role: Role::User, 
+                content: input.to_string()
+            }
+        );
+
+        match providers::send(&providerDetails, &history).await {
+            Ok(text) => {
+                println!("{text}");
+                history.push(
+                    ChatMessage {
+                        role: Role::Assistant,
+                        content: text
+                    }
+                );
+            },
+                Err(e) => {
+                    println!("Errror {e}");
+                    history.pop();
+                },
+            };
+    }
 
 }

@@ -61,10 +61,28 @@ impl ProviderConfig {
     
 }
 
-pub async fn send(config: &ProviderConfig, prompt: &str) -> Result<String, Box<dyn std::error::Error>>{
+pub enum Role {
+    User,
+    Assistant,
+}
+
+// Content type can change.
+pub struct ChatMessage {
+    pub role: Role,
+    pub content: String,
+}
+
+pub async fn send(config: &ProviderConfig, history: &[ChatMessage]) -> Result<String, Box<dyn std::error::Error>>{
     match config.kind {
-        ProviderKind::Google => google::send(config, prompt).await,
+        ProviderKind::Google => google::send(config, history).await,
+        ProviderKind::Ollama => ollama::send(config, history).await,
+        ProviderKind::OpenAI => openai::send(config, history).await,
+        ProviderKind::Anthropic => anthropic::send(config, history).await,
         _ => Err("provider not implemented yet.".into()),
     }
 }
+
+
+
+
 
