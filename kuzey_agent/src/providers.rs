@@ -11,6 +11,29 @@ pub enum ProviderKind {
     OpenAI
 }
 
+pub struct  AvailableProviderAndModels{
+
+    pub provider_list: Vec<String>,
+    pub ollama_models: Vec<String>,
+    pub anthropic_models: Vec<String>,
+    pub google_models: Vec<String>,
+    pub openai_models: Vec<String>,
+}
+
+impl  AvailableProviderAndModels{
+
+    pub fn new() -> Self{
+    
+        Self {
+            provider_list: vec!["ollama".to_string(),"openai".to_string(),"anthropic".to_string(),"google".to_string()],
+            ollama_models: vec!["qwen3.8".to_string()],
+            anthropic_models: vec!["opus-5.0".to_string()],
+            google_models: vec!["models/gemini-3.8-flash".to_string()],
+            openai_models: vec!["gpt-5.6-astra".to_string()],
+        }
+    }
+}
+
 // We can change the f32 part. needs a performace resarch. 
 pub struct ProviderConfig {
 

@@ -1,27 +1,26 @@
 mod providers;
  
 use std::io;
-use inquire::{Select, MultiSelect, Password, PasswordDisplayMode};
+use inquire::{Select, Password, PasswordDisplayMode};
 use providers::ProviderKind;
 use providers::ProviderConfig;
 use providers::send;
-
+use providers::AvailableProviderAndModels;
 
 #[tokio::main]
 async fn main() {
 
-    //Problmematic desing performance and architecture wise. Needs to chjange.
-    let all_providers: Vec<&str> = vec!["ollama","google","openai","anthropic"];
+    let availables = AvailableProviderAndModels::new();
 
     println!("Kuzey Agent 0.1.0");
     
-    let provider_type= Select::new("Which provider are you going with!", all_providers)
+    let provider_type= Select::new("Which provider are you going with!",availables.provider_list )
         .prompt()
         .unwrap();
 
     println!("Selected {provider_type}");
     
-    let kind = match provider_type {
+    let kind = match provider_type.as_str() {
         "ollama" => ProviderKind::Ollama,
         "google" => ProviderKind::Google,
         "openai" => ProviderKind::OpenAI,
@@ -38,13 +37,40 @@ async fn main() {
     // Same problem for here. maybe with a constructor or something like that but this is really
     // problematic design to go with. Its basically wrong and will create trouble at more
     // integrations. 
-    let all_google_models: Vec<&str> = vec!["models/gemini-3.8-flash"];
 
-    let model_type = Select::new("Which model you want to use!", all_google_models)
-        .prompt()
-        .unwrap();
+    let model_type = match kind {
+        
+        ProviderKind::Ollama => {
+            let model_type = Select::new("Which model you want to use!", availables.ollama_models)
+            .prompt()
+            .unwrap();
 
-    let model_type = model_type.to_string();
+            model_type
+        },
+        ProviderKind::Google => {
+            let model_type = Select::new("Which model you want to use!", availables.google_models)
+            .prompt()
+            .unwrap();
+
+            model_type
+        },
+        ProviderKind::OpenAI => {
+            let model_type = Select::new("Which model you want to use!", availables.openai_models)
+            .prompt()
+            .unwrap();
+
+            model_type
+        },
+        ProviderKind::Anthropic => {
+            let model_type = Select::new("Which model you want to use!", availables.anthropic_models)
+            .prompt()
+            .unwrap();
+
+            model_type
+        },
+        _ => unreachable!("Select only returns item from the list")
+    
+    };
 
     let providerDetails = ProviderConfig::new(kind, model_type, Some(api_key));
 
