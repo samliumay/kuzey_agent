@@ -1,1 +1,0 @@
-cargo:rustc-env=MIME_TYPES_GENERATED_PATH=/home/umay-samli/Desktop/projects/kuzey_agent/kuzey_agent/target/debug/build/mime_guess-b746d2c399a3c006/out/mime_types_generated.rs
