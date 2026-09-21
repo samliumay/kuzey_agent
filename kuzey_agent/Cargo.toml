@@ -6,4 +6,5 @@ edition = "2024"
 [dependencies]
 gemini-rust="2.0.0"
 inquire = "0.9.4"
+serde_json = "1.0.151"
 tokio={version="1", features=["full"]}
