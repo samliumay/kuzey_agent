@@ -1,11 +1,43 @@
-# Rust build output
+# ---- Rust / Cargo ----
+# Build output (debug + release binaries, incremental cache, rust-analyzer flycheck)
 target/
+**/target/
+# rustfmt backup files
+**/*.rs.bk
+# MSVC debug symbols (Windows builds)
+*.pdb
+# Profiling / coverage output
+*.profraw
+*.profdata
+perf.data*
+flamegraph.svg
 
-# Secrets
+# ---- Secrets ----
 .env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets.toml
 
-# Editor / OS
+# ---- Agent runtime data ----
+# Conversation logs / local history, if the agent starts writing them
+*.log
+logs/
+history/
+
+# ---- Editors / IDEs ----
 .vscode/
 .idea/
+*.iml
 *.swp
+*.swo
+*~
+.zed/
+
+# ---- OS ----
 .DS_Store
+Thumbs.db
+
+# ---- AI tooling (personal, machine-local settings) ----
+.claude/settings.local.json
