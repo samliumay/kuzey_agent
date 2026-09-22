@@ -1,10 +1,8 @@
-use super::{ProviderConfig, ChatMessage, Role};
+use super::{ProviderConfig, ChatMessage, Reply};
+use crate::tools::ToolSpec;
+//Why _<something> ? what it means? 
+pub(super) async fn send(_config: &ProviderConfig, _history: &[ChatMessage], _tools: &[ToolSpec]) -> Result<Reply, Box<dyn std::error::Error>> {
 
-
-#[allow(deprecated)]
-pub(super) async fn send(config: &ProviderConfig, history: &[ChatMessage]) -> Result<String, Box<dyn std::error::Error>>{
-
-    Ok(String::from("will be implemented"))
+    Ok(Reply::Text(String::from("will be implemented")))
 
 }
-

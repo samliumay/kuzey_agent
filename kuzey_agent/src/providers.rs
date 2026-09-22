@@ -3,38 +3,55 @@ mod ollama;
 mod anthropic;
 mod openai;
 
-//Current Google is under construction.
+use crate::tools::{ToolCall, ToolSpec};
+
+//Need to check did I wrote them correctly! (new to rust)
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ProviderKind {
     Ollama,
     Anthropic,
-    Google, 
-    OpenAI
+    Google,
+    OpenAI,
 }
 
-pub struct  AvailableProviderAndModels{
+impl ProviderKind {
+    pub const ALL: [ProviderKind; 4] =
+        [Self::Ollama, Self::Anthropic, Self::Google, Self::OpenAI];
 
-    pub provider_list: Vec<String>,
-    pub ollama_models: Vec<String>,
-    pub anthropic_models: Vec<String>,
-    pub google_models: Vec<String>,
-    pub openai_models: Vec<String>,
-}
-
-impl  AvailableProviderAndModels{
-
-    pub fn new() -> Self{
-    
-        Self {
-            provider_list: vec!["ollama".to_string(),"openai".to_string(),"anthropic".to_string(),"google".to_string()],
-            ollama_models: vec!["qwen3.8".to_string()],
-            anthropic_models: vec!["opus-5.0".to_string()],
-            google_models: vec!["models/gemini-3.8-flash".to_string()],
-            openai_models: vec!["gpt-5.6-astra".to_string()],
+    /// Models offered in the menu for this provider.
+    pub fn models(&self) -> Vec<&'static str> {
+        match self {
+            Self::Ollama => vec!["qwen3.8"],
+            Self::Anthropic => vec!["claude-opus-5"],
+            Self::Google => vec!["models/gemini-3.8-flash"],
+            Self::OpenAI => vec!["gpt-5.6-astra"],
         }
+    }
+
+    /// Ollama runs locally and has no key.
+    pub fn needs_api_key(&self) -> bool {
+        //Not sure about this syntax. Why ! at the begining of matches. 
+        !matches!(self, Self::Ollama)
     }
 }
 
-// We can change the f32 part. needs a performace resarch. 
+//Not sure what this means. Seems likea addinga function to standard format display livrary but
+//what is for provider kind? Is it specilized function implementeation when its implemented for
+//ProviderKind? Also need to resarch &self, f: &mut std:fmt:Formatter<'_> what this means. it
+//barrows self.? then taken ownersgip of std:fmt:Formatter ? but what this means. than it returns
+//result enum I think. ? 
+impl std::fmt::Display for ProviderKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name = match self {
+            Self::Ollama => "ollama",
+            Self::Anthropic => "anthropic",
+            Self::Google => "google",
+            Self::OpenAI => "openai",
+        };
+        write!(f, "{name}")
+    }
+}
+
 pub struct ProviderConfig {
 
     pub kind: ProviderKind,
@@ -61,28 +78,23 @@ impl ProviderConfig {
     
 }
 
-pub enum Role {
-    User,
-    Assistant,
+pub enum Reply{
+    Text(String),
+    ToolCalls(Vec<ToolCall>),
 }
 
-// Content type can change.
-pub struct ChatMessage {
-    pub role: Role,
-    pub content: String,
+pub enum ChatMessage {
+    User(String),
+    Assistant(String),
+    ToolCalls(Vec<ToolCall>),
+    ToolResult { name: String, output: String },
 }
 
-pub async fn send(config: &ProviderConfig, history: &[ChatMessage]) -> Result<String, Box<dyn std::error::Error>>{
+pub async fn send(config: &ProviderConfig, history: &[ChatMessage], tools: &[ToolSpec]) -> Result<Reply, Box<dyn std::error::Error>>{
     match config.kind {
-        ProviderKind::Google => google::send(config, history).await,
-        ProviderKind::Ollama => ollama::send(config, history).await,
-        ProviderKind::OpenAI => openai::send(config, history).await,
-        ProviderKind::Anthropic => anthropic::send(config, history).await,
-        _ => Err("provider not implemented yet.".into()),
+        ProviderKind::Google => google::send(config, history, tools).await,
+        ProviderKind::Ollama => ollama::send(config, history, tools).await,
+        ProviderKind::OpenAI => openai::send(config, history, tools).await,
+        ProviderKind::Anthropic => anthropic::send(config, history, tools).await,
     }
 }
-
-
-
-
-

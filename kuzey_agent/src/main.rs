@@ -1,76 +1,37 @@
 mod providers;
+mod tools;
  
-use std::io;
 use inquire::{Select, Password, PasswordDisplayMode, Text};
-use providers::{ProviderKind, ProviderConfig, send, AvailableProviderAndModels, ChatMessage, Role};
+use providers::{ProviderKind, ProviderConfig, ChatMessage, Reply};
 
 #[tokio::main]
 async fn main() {
 
-    let availables = AvailableProviderAndModels::new();
-
     println!("Kuzey Agent 0.1.0");
-    
-    let provider_type= Select::new("Which provider are you going with!",availables.provider_list )
+
+    let kind = Select::new("Which provider are you going with?", ProviderKind::ALL.to_vec())
         .prompt()
         .unwrap();
 
-    println!("Selected {provider_type}");
-    
-    let kind = match provider_type.as_str() {
-        "ollama" => ProviderKind::Ollama,
-        "google" => ProviderKind::Google,
-        "openai" => ProviderKind::OpenAI,
-        "anthropic" => ProviderKind::Anthropic,
-        _ => unreachable!("Select only returns item from the list")
+    let api_key = if kind.needs_api_key() {
+        let key = Password::new("Please enter your API key:")
+            .with_display_mode(PasswordDisplayMode::Masked)
+            .without_confirmation()
+            .prompt()
+            .unwrap();
+        let key = key.trim();
+        if key.is_empty() { None } else { Some(key.to_string()) }
+    } else {
+        None
     };
 
-    let mut api_key = Password::new("Please enter your API key:")
-        .with_display_mode(PasswordDisplayMode::Masked)
-        .without_confirmation()
+    let model = Select::new("Which model do you want to use?", kind.models())
         .prompt()
         .unwrap();
 
-    // Same problem for here. maybe with a constructor or something like that but this is really
-    // problematic design to go with. Its basically wrong and will create trouble at more
-    // integrations. 
+    let provider_details = ProviderConfig::new(kind, model.to_string(), api_key);
 
-    let model_type = match kind {
-        
-        ProviderKind::Ollama => {
-            let model_type = Select::new("Which model you want to use!", availables.ollama_models)
-            .prompt()
-            .unwrap();
-
-            model_type
-        },
-        ProviderKind::Google => {
-            let model_type = Select::new("Which model you want to use!", availables.google_models)
-            .prompt()
-            .unwrap();
-
-            model_type
-        },
-        ProviderKind::OpenAI => {
-            let model_type = Select::new("Which model you want to use!", availables.openai_models)
-            .prompt()
-            .unwrap();
-
-            model_type
-        },
-        ProviderKind::Anthropic => {
-            let model_type = Select::new("Which model you want to use!", availables.anthropic_models)
-            .prompt()
-            .unwrap();
-
-            model_type
-        },
-        _ => unreachable!("Select only returns item from the list")
-    
-    };
-
-    let providerDetails = ProviderConfig::new(kind, model_type, Some(api_key));
-
+    let tool_specs = tools::specs();
     let mut history: Vec<ChatMessage> = Vec::new();
 
     loop {
@@ -88,27 +49,40 @@ async fn main() {
         }
 
         history.push(
-            ChatMessage {
-                role: Role::User, 
-                content: input.to_string()
-            }
+            ChatMessage::User(input.to_string())
         );
 
-        match providers::send(&providerDetails, &history).await {
-            Ok(text) => {
-                println!("{text}");
-                history.push(
-                    ChatMessage {
-                        role: Role::Assistant,
-                        content: text
+        
+        // Inner loop: keep going while the model asks for tools.
+        // It ends when the model answers with text (or after 10 rounds).
+        for _ in 0..10 {
+            match providers::send(&provider_details, &history, &tool_specs).await {
+                Ok(Reply::Text(text)) => {
+                    println!("{text}");
+                    history.push(ChatMessage::Assistant(text));
+                    break;
+                }
+                Ok(Reply::ToolCalls(calls)) => {
+                    let mut results = Vec::new();
+                    for call in &calls {
+                        println!("[tool] {} {}", call.name, call.args);
+                        let output = tools::execute(call).await;
+                        results.push(ChatMessage::ToolResult {
+                            name: call.name.clone(),
+                            output,
+                        });
                     }
-                );
-            },
+                    history.push(ChatMessage::ToolCalls(calls));
+                    //This part is kinda wierd. why not push results? 
+                    history.extend(results);
+                }
                 Err(e) => {
-                    println!("Errror {e}");
+                    println!("Error {e}");
                     history.pop();
-                },
-            };
+                    break;
+                }
+            }
+        }
     }
 
 }
