@@ -1,6 +1,6 @@
 mod time;
 mod read_file;
-
+mod write_file;
 
 pub struct ToolSpec {
     pub name: &'static str,
@@ -18,7 +18,7 @@ pub struct ToolCall {
 
 // returns all the tools we have.
 pub fn specs() -> Vec<ToolSpec> {
-    vec![time::spec(), read_file::spec()]
+    vec![time::spec(), read_file::spec(), write_file::spec()]
 }
 
 pub async fn execute(call: &ToolCall) -> String {
@@ -26,6 +26,7 @@ pub async fn execute(call: &ToolCall) -> String {
     match call.name.as_str(){
         "get_current_time"  => time::run(&call.args).await,
         "read_file"         => read_file::run(&call.args).await,
+        "write_file"        => write_file::run(&call.args).await,
         other               => format!("Error: unknown tool '{other}'"),
 
     }
