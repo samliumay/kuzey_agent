@@ -21,7 +21,7 @@ impl ProviderKind {
     /// Models offered in the menu for this provider.
     pub fn models(&self) -> Vec<&'static str> {
         match self {
-            Self::Ollama => vec!["qwen3.8"],
+            Self::Ollama => vec!["qwen3.8:latest"],
             Self::Anthropic => vec!["claude-opus-5"],
             Self::Google => vec!["models/gemini-3.8-flash"],
             Self::OpenAI => vec!["gpt-5.6-astra"],
