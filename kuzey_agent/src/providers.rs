@@ -60,6 +60,7 @@ pub struct ProviderConfig {
     pub top_p: f32,
     pub top_k: u32,
     pub api_key: Option<String>,
+    pub system_prompt: String,
 }
 
 impl ProviderConfig {
@@ -72,7 +73,9 @@ impl ProviderConfig {
             top_p: 0.95,
             top_k: 40,
             api_key,
-        }
+            system_prompt: String::from("You are Kuzey, a helpfull terminal agent/assistant. \
+                                        Use the available tools when they help, e.g. get_current time when time is needed and so on." ),
+        } 
 
     }
     

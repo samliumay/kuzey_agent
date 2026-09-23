@@ -84,6 +84,7 @@ pub(super) async fn send(config: &ProviderConfig, history: &[ChatMessage], tools
     let mut request = client
         .generate_content()
         .with_messages(messages)
+        .with_system_instruction(config.system_prompt.clone())
         .with_temperature(config.temp)
         .with_top_p(config.top_p)
         .with_top_k(config.top_k as i32);

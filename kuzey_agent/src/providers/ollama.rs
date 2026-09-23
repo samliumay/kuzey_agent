@@ -5,7 +5,10 @@ use serde_json::{json, Value};
 pub(super) async fn send(_config: &ProviderConfig, _history: &[ChatMessage], _tools: &[ToolSpec]) -> Result<Reply, Box<dyn std::error::Error>> {
 
 
-let mut messages: Vec<Value> = Vec::new();
+let mut messages: Vec<Value> = vec![ json!({
+    "role": "system", 
+    "content": _config.system_prompt
+}) ];
 
 for entry in _history {
     match entry {
@@ -81,7 +84,7 @@ let tool_list: Vec<Value> = _tools.iter().map(|t| json!({
     };
 
     // The end part is pretty-print, to see the shape. but is it build in or not I do not know. 
-    println!("{response:#}");
+    // println!("{response:#}");
 
     let answer = response["message"]["content"].as_str().unwrap_or("").to_string();
 
