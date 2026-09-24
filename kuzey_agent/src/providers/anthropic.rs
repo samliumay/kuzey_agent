@@ -23,15 +23,53 @@ pub(super) async fn send(config: &ProviderConfig, history: &[ChatMessage], tools
                     "content": text
                 }));
             },
+            ChatMessage::ToolCalls(calls) => {
+                let blocks: Vec<Value> = calls.iter().map(|c| json!({
+                    "type": "tool_use",
+                    "id": c.id,
+                    "name": c.name,
+                    "input": c.input
+                })).collect();
 
-            _ => {} //need to add tool use. 
+                messages.push(json!({
+                    "role": "assistant",
+                    "content": calls,
+                }));
+            },
+            ChatMessage::ToolResults {id, output, ..} => {
+                let block = json!({
+                    "type": "tool_result",
+                    "tool_use_id": id,
+                    "content": output
+                });
+                //This is how anthropic wants. Wierd shiii. 
+                match messages.last_mut() {
+                    Some(last) if last["content"][0]["type"] == "tool_result" => {
+                        last["content"].as_array_mut().unwrap().push(block);
+                    },
+
+                    _ => {messages.push(json!({
+                        "role": "user",
+                        "content": [block]
+                        }));
+                    }
+
+            }
+            }
+
         }
     }
+
+    let tool_list: Vec<Value> = tools.iter().map(|t| json!({
+        "name": t.name,
+        "description": t.description,
+        "input_schema": t.parameters,
+    })).collect();
 
 
     let body = json!({
         "model": config.model,
-        "max_tokens": 1600, // you can change if you are rich. Maybe we can add this to config
+        "max_tokens": 16000, // you can change if you are rich. Maybe we can add this to config
         "system": config.system_prompt,// specilized for anthropic. Like signiture.
         "messages": messages
     });

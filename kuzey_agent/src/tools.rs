@@ -9,6 +9,7 @@ pub struct ToolSpec {
 }
 
 pub struct ToolCall {
+    pub id: Option<String>, //OpenAI and Anthropic give ID to tool calls.
     pub name: String,
     pub args: serde_json::Value,
     // Opaque data Gemini attaches to a call; must be sent back unchanged.
