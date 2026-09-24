@@ -22,7 +22,7 @@ impl ProviderKind {
     pub fn models(&self) -> Vec<&'static str> {
         match self {
             Self::Ollama => vec!["qwen3.8:latest"],
-            Self::Anthropic => vec!["claude-opus-5"],
+            Self::Anthropic => vec!["claude-haiku-4-5-20251001"],
             Self::Google => vec!["models/gemini-3.8-flash"],
             Self::OpenAI => vec!["gpt-5.6-astra"],
         }
