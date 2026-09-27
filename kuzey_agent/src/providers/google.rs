@@ -59,7 +59,7 @@ pub(super) async fn send(config: &ProviderConfig, history: &[ChatMessage], tools
             // A tool result. Gemini wants all results of one round in a single "user"
             // message, so append to the previous one if it is also a result message.
             // This is still a wierd syntax I need to study and understand. 
-            ChatMessage::ToolResult { name, output } => {
+            ChatMessage::ToolResult { name, output, .. } => {
                 let part = Part::FunctionResponse {
                     function_response: gemini_rust::FunctionResponse::new(
                         name,
@@ -110,6 +110,7 @@ pub(super) async fn send(config: &ProviderConfig, history: &[ChatMessage], tools
         .function_calls_with_thoughts()
         .into_iter()
         .map(|(call, signature)| ToolCall {
+            id: None, // Gemini does not give ids to tool calls.
             name: call.name.clone(),
             args: call.args.clone(),
             signature: signature.cloned(),

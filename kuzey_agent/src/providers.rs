@@ -90,7 +90,7 @@ pub enum ChatMessage {
     User(String),
     Assistant(String),
     ToolCalls(Vec<ToolCall>),
-    ToolResult { name: String, output: String },
+    ToolResult { id: Option<String>, name: String, output: String },
 }
 
 pub async fn send(config: &ProviderConfig, history: &[ChatMessage], tools: &[ToolSpec]) -> Result<Reply, Box<dyn std::error::Error>>{

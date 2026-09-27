@@ -28,15 +28,15 @@ pub(super) async fn send(config: &ProviderConfig, history: &[ChatMessage], tools
                     "type": "tool_use",
                     "id": c.id,
                     "name": c.name,
-                    "input": c.input
+                    "input": c.args
                 })).collect();
 
                 messages.push(json!({
                     "role": "assistant",
-                    "content": calls,
+                    "content": blocks,
                 }));
             },
-            ChatMessage::ToolResults {id, output, ..} => {
+            ChatMessage::ToolResult {id, output, ..} => {
                 let block = json!({
                     "type": "tool_result",
                     "tool_use_id": id,

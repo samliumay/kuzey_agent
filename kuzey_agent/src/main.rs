@@ -68,6 +68,7 @@ async fn main() {
                         println!("[tool] {} {}", call.name, call.args);
                         let output = tools::execute(call).await;
                         results.push(ChatMessage::ToolResult {
+                            id: call.id.clone(),
                             name: call.name.clone(),
                             output,
                         });

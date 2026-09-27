@@ -34,7 +34,7 @@ for entry in _history {
 
             messages.push(json!({"role": "assistant", "tool_calls": tool_calls}));
         }
-        ChatMessage::ToolResult {name, output} => {
+        ChatMessage::ToolResult {name, output, ..} => {
             messages.push(json!({
                 "role": "tool", 
                 "tool_name": name, 
@@ -74,6 +74,7 @@ let tool_list: Vec<Value> = _tools.iter().map(|t| json!({
 
     if let Some(calls) = response["message"]["tool_calls"].as_array() {
         let calls: Vec<ToolCall> = calls.iter().map(|c| ToolCall {
+            id: None, // Ollama does not give ids to tool calls.
             name: c["function"]["name"].as_str().unwrap_or("").to_string(),
             args: c["function"]["arguments"].clone(),
             signature: None //This is just for gemini.
