@@ -1,6 +1,6 @@
+mod anthropic;
 mod google;
 mod ollama;
-mod anthropic;
 mod openai;
 
 use crate::tools::{ToolCall, ToolSpec};
@@ -15,22 +15,21 @@ pub enum ProviderKind {
 }
 
 impl ProviderKind {
-    pub const ALL: [ProviderKind; 4] =
-        [Self::Ollama, Self::Anthropic, Self::Google, Self::OpenAI];
+    pub const ALL: [ProviderKind; 4] = [Self::Ollama, Self::Anthropic, Self::Google, Self::OpenAI];
 
     /// Models offered in the menu for this provider.
     pub fn models(&self) -> Vec<&'static str> {
         match self {
-            Self::Ollama => vec!["qwen3.8:latest"],
+            Self::Ollama => vec!["qwen3.8:latest", "ornith:9b"],
             Self::Anthropic => vec!["claude-haiku-4-5-20251001"],
             Self::Google => vec!["models/gemini-3.8-flash"],
-            Self::OpenAI => vec!["gpt-5.6-astra"],
+            Self::OpenAI => vec!["gpt-6-luna"],
         }
     }
 
     /// Ollama runs locally and has no key.
     pub fn needs_api_key(&self) -> bool {
-        //Not sure about this syntax. Why ! at the begining of matches. 
+        //Not sure about this syntax. Why ! at the begining of matches.
         !matches!(self, Self::Ollama)
     }
 }
@@ -39,7 +38,7 @@ impl ProviderKind {
 //what is for provider kind? Is it specilized function implementeation when its implemented for
 //ProviderKind? Also need to resarch &self, f: &mut std:fmt:Formatter<'_> what this means. it
 //barrows self.? then taken ownersgip of std:fmt:Formatter ? but what this means. than it returns
-//result enum I think. ? 
+//result enum I think. ?
 impl std::fmt::Display for ProviderKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let name = match self {
@@ -53,7 +52,6 @@ impl std::fmt::Display for ProviderKind {
 }
 
 pub struct ProviderConfig {
-
     pub kind: ProviderKind,
     pub model: String,
     pub temp: f32,
@@ -64,7 +62,6 @@ pub struct ProviderConfig {
 }
 
 impl ProviderConfig {
-    
     pub fn new(kind: ProviderKind, model: String, api_key: Option<String>) -> Self {
         Self {
             kind,
@@ -73,15 +70,15 @@ impl ProviderConfig {
             top_p: 0.95,
             top_k: 40,
             api_key,
-            system_prompt: String::from("You are Kuzey, a helpfull terminal agent/assistant. \
-                                        Use the available tools when they help, e.g. get_current time when time is needed and so on." ),
-        } 
-
+            system_prompt: String::from(
+                "You are Kuzey, a helpfull terminal agent/assistant. \
+                                        Use the available tools when they help, e.g. get_current time when time is needed and so on.",
+            ),
+        }
     }
-    
 }
 
-pub enum Reply{
+pub enum Reply {
     Text(String),
     ToolCalls(Vec<ToolCall>),
 }
@@ -90,10 +87,18 @@ pub enum ChatMessage {
     User(String),
     Assistant(String),
     ToolCalls(Vec<ToolCall>),
-    ToolResult { id: Option<String>, name: String, output: String },
+    ToolResult {
+        id: Option<String>,
+        name: String,
+        output: String,
+    },
 }
 
-pub async fn send(config: &ProviderConfig, history: &[ChatMessage], tools: &[ToolSpec]) -> Result<Reply, Box<dyn std::error::Error>>{
+pub async fn send(
+    config: &ProviderConfig,
+    history: &[ChatMessage],
+    tools: &[ToolSpec],
+) -> Result<Reply, Box<dyn std::error::Error>> {
     match config.kind {
         ProviderKind::Google => google::send(config, history, tools).await,
         ProviderKind::Ollama => ollama::send(config, history, tools).await,
