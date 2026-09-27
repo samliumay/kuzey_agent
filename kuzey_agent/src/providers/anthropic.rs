@@ -1,5 +1,5 @@
 use super::{ProviderConfig, ChatMessage, Reply};
-use crate::tools::ToolSpec;
+use crate::tools::{ToolSpec, ToolCall};
 use serde_json::{json, Value};
 
 //Still need to integrate the tools. For an example check ollama.rs"
@@ -71,7 +71,8 @@ pub(super) async fn send(config: &ProviderConfig, history: &[ChatMessage], tools
         "model": config.model,
         "max_tokens": 16000, // you can change if you are rich. Maybe we can add this to config
         "system": config.system_prompt,// specilized for anthropic. Like signiture.
-        "messages": messages
+        "messages": messages,
+        "tools": tool_list,
     });
 
     let response: Value = reqwest::Client::new()
@@ -87,15 +88,32 @@ pub(super) async fn send(config: &ProviderConfig, history: &[ChatMessage], tools
     println!("{response:#}");
 
     let mut answer = String::new();
-    
+    let mut calls: Vec<ToolCall> = Vec::new();
+
     if let Some(blocks) = response["content"].as_array() {
         for block in blocks {
             if block["type"] == "text" {
                 answer.push_str(block["text"].as_str().unwrap_or(""));
+            } else if block["type"] == "tool_use" {
+                calls.push(ToolCall {
+                    id: block["id"].as_str().map(|s| s.to_string()),//What is this map?
+                    name: block["name"].as_str().unwrap_or("").to_string(),//So converting to &str
+                    //then to String? 
+                    args: block["input"].clone(),
+                    signature: None, //Gemini only.
+                });
             }
         }
     }
 
-    Ok(Reply::Text(answer))
+    if calls.is_empty(){
+        
+        Ok(Reply::Text(answer))
+    
+    }else {
+        
+        Ok(Reply::ToolCalls(calls))
+    
+    }
 
 }

@@ -41,3 +41,6 @@ Thumbs.db
 
 # ---- AI tooling (personal, machine-local settings) ----
 .claude/settings.local.json
+
+# ---- Personal notes ----
+questions_and_answers.md
