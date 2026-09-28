@@ -1,11 +1,13 @@
-# Kuzey Agent
+# <img src="https://api.iconify.design/lucide/brain-circuit.svg?color=%236e7781" width="28" alt="" /> Kuzey Agent
+
+[![CI](https://github.com/samliumay/kuzey_agent/actions/workflows/ci.yml/badge.svg)](https://github.com/samliumay/kuzey_agent/actions/workflows/ci.yml)
 
 A terminal AI agent written from scratch in Rust. You chat with a model, and the model can use
 tools on your machine (read and write files, run shell commands) to get things done.
 
-It talks to Gemini, Claude and local Ollama models through the same chat and tool loop. No agent
-framework is involved: every provider is a hand-written translation between Kuzey's own message
-types and that API's JSON.
+It talks to OpenAI, Gemini, Claude and local Ollama models through the same chat and tool
+loop. No agent framework is involved: every provider is a hand-written translation between
+Kuzey's own message types and that API's JSON.
 
 > **Learning project.** I'm building this to learn Rust, so the code is commented with notes and
 > open questions. It works, but it's not hardened. Read the [safety](#safety) section before
@@ -21,12 +23,12 @@ types and that API's JSON.
 
 ### Providers
 
-| Provider | Status | Default model | Needs |
+| Provider | Status | Models in the menu | Needs |
 |---|---|---|---|
-| Google Gemini | ✅ chat + tools | `models/gemini-3.8-flash` | [Gemini API key](https://aistudio.google.com/apikey) |
-| Anthropic Claude | ✅ chat + tools | `claude-haiku-4-5-20251001` | [Anthropic API key](https://console.anthropic.com/settings/keys) |
-| Ollama (local) | ✅ chat + tools | `qwen3.8:latest` | [Ollama](https://ollama.com) running on `localhost:11434` |
-| OpenAI | 🚧 not implemented yet | `gpt-5.6-astra` | |
+| Google Gemini | <img src="https://api.iconify.design/lucide/circle-check.svg?color=%236e7781" width="16" alt="" /> chat + tools | `models/gemini-3.8-flash` | [Gemini API key](https://aistudio.google.com/apikey) |
+| Anthropic Claude | <img src="https://api.iconify.design/lucide/circle-check.svg?color=%236e7781" width="16" alt="" /> chat + tools | `claude-haiku-4-5-20251001` | [Anthropic API key](https://console.anthropic.com/settings/keys) |
+| OpenAI | <img src="https://api.iconify.design/lucide/circle-check.svg?color=%236e7781" width="16" alt="" /> chat + tools ([Responses API](https://platform.openai.com/docs/api-reference/responses)) | `gpt-6-luna` | [OpenAI API key](https://platform.openai.com/api-keys) |
+| Ollama (local) | <img src="https://api.iconify.design/lucide/circle-check.svg?color=%236e7781" width="16" alt="" /> chat + tools | `qwen3.8:latest`, `ornith:9b` | [Ollama](https://ollama.com) running on `localhost:11434` |
 
 ### Tools
 
@@ -99,8 +101,8 @@ changing, ideally inside a VM or container, and watch the `[tool]` lines.
             └──────────────────────┬────────────────────────┘
                                    │ providers::send()
                     ┌──────────────▼──────────────┐
-                    │ google.rs / anthropic.rs /  │  translate history + tool specs
-                    │ ollama.rs                   │  into that API's JSON, call it
+                    │ openai.rs / google.rs /     │  translate history + tool specs
+                    │ anthropic.rs / ollama.rs    │  into that API's JSON, call it
                     └──────────────┬──────────────┘
                                    │ Reply
                ┌───────────────────┴───────────────────┐
@@ -110,9 +112,16 @@ changing, ideally inside a VM or container, and watch the `[tool]` lines.
                                      call the provider again (max 10×)
 ```
 
-Each provider owns its translation: Gemini wants `Part`s and a thought signature echoed
-back, Anthropic wants `tool_use` / `tool_result` blocks matched by id, Ollama uses
-OpenAI-style `tool_calls`. `main.rs` never knows which one it's talking to.
+Each provider owns its translation:
+
+| Provider | Tool call | Tool result | Matched by |
+|---|---|---|---|
+| OpenAI (Responses) | `function_call` item | `function_call_output` item | `call_id` |
+| Anthropic | `tool_use` block | `tool_result` block | `id` / `tool_use_id` |
+| Gemini | `FunctionCall` part + thought signature | `FunctionResponse` part | name |
+| Ollama | `tool_calls` on the message | `role: "tool"` message | name |
+
+`main.rs` never knows which one it's talking to.
 
 ## Project layout
 
@@ -120,7 +129,7 @@ OpenAI-style `tool_calls`. `main.rs` never knows which one it's talking to.
 kuzey_agent/src/
 ├── main.rs          # CLI prompts + the chat / tool loop
 ├── providers.rs     # ProviderConfig, ChatMessage, Reply, dispatch to a provider
-├── providers/       # google.rs · anthropic.rs · ollama.rs · openai.rs (stub)
+├── providers/       # openai.rs · google.rs · anthropic.rs · ollama.rs
 ├── tools.rs         # ToolSpec, ToolCall, dispatch to a tool
 └── tools/           # time.rs · read_file.rs · write_file.rs · run_command.rs
 ```
@@ -137,16 +146,35 @@ kuzey_agent/src/
 
 Every provider picks it up automatically.
 
+## Development
+
+Work happens on a branch per change, merged through a pull request:
+
+```bash
+git switch main && git pull
+git switch -c my-change
+# ... edit ...
+cd kuzey_agent && cargo build --locked && cargo test --locked && cargo clippy --locked
+git commit -am "Describe the change"
+git push -u origin my-change
+gh pr create
+```
+
+[CI](.github/workflows/ci.yml) runs on every pull request and every push to `main`:
+`cargo build`, `cargo test`, `cargo clippy` and `cargo fmt --check` (the last two report
+issues without failing the run for now).
+
 ## Roadmap
 
 - [x] Interactive CLI with masked API key input
 - [x] Chat loop with conversation history
 - [x] Tool calling with multi-step rounds
-- [x] Gemini, Ollama and Anthropic providers
+- [x] OpenAI, Gemini, Anthropic and Ollama providers
 - [x] Tools: time, read file, write file, run command
+- [x] CI: build, test, clippy, fmt
 - [ ] Ask before `write_file` and `run_command` run
-- [ ] OpenAI provider
 - [ ] `edit_file` tool (find and replace instead of rewriting whole files)
 - [ ] Windows support for `run_command` (`cmd /C`)
 - [ ] Streaming responses
+- [ ] Strict CI (`cargo fmt` the codebase, `clippy -D warnings`)
 - [ ] Better errors and tests
