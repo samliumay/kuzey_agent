@@ -1,12 +1,10 @@
+mod helpers;
 mod providers;
 mod tools;
 
-use inquire::{
-    CustomUserError, Password, PasswordDisplayMode, Select, Text,
-    autocompletion::{Autocomplete, Replacement},
-};
+use helpers::{MentionCompleter, expand_mentions};
+use inquire::{Password, PasswordDisplayMode, Select, Text};
 use providers::{ChatMessage, ProviderConfig, ProviderKind, Reply};
-use std::path::Path;
 
 #[tokio::main]
 async fn main() {
@@ -26,7 +24,8 @@ async fn main() {
         let Ok(key) = Password::new("Please enter your API key:")
             .with_display_mode(PasswordDisplayMode::Masked)
             .without_confirmation()
-            .prompt() else {
+            .prompt()
+        else {
             println!("Exiting...");
             return;
         };
@@ -51,7 +50,10 @@ async fn main() {
     let mut history: Vec<ChatMessage> = Vec::new();
 
     loop {
-        let Ok(input) = Text::new("You:").prompt() else {
+        let Ok(input) = Text::new("You:")
+            .with_autocomplete(MentionCompleter)
+            .prompt()
+        else {
             println!("Exiting...");
             break;
         };
@@ -68,7 +70,7 @@ async fn main() {
 
         // Where this turn starts, so a failed turn can be removed completely.
         let turn_start = history.len();
-        history.push(ChatMessage::User(input.to_string()));
+        history.push(ChatMessage::User(expand_mentions(input)));
 
         // Inner loop: keep going while the model asks for tools.
         // It ends when the model answers with text (or after 10 rounds).
