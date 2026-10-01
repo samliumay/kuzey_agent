@@ -1,33 +1,48 @@
+mod helpers;
 mod providers;
 mod tools;
- 
-use inquire::{Select, Password, PasswordDisplayMode, Text};
-use providers::{ProviderKind, ProviderConfig, ChatMessage, Reply};
+
+use helpers::{MentionCompleter, expand_mentions};
+use inquire::{Password, PasswordDisplayMode, Select, Text};
+use providers::{ChatMessage, ProviderConfig, ProviderKind, Reply};
 
 #[tokio::main]
 async fn main() {
-
     println!("Kuzey Agent 0.1.0");
 
-    let kind = Select::new("Which provider are you going with?", ProviderKind::ALL.to_vec())
-        .prompt()
-        .unwrap();
+    // Ctrl+C / Esc in any prompt returns Err: exit cleanly instead of panicking.
+    let Ok(kind) = Select::new(
+        "Which provider are you going with?",
+        ProviderKind::ALL.to_vec(),
+    )
+    .prompt() else {
+        println!("Exiting...");
+        return;
+    };
 
     let api_key = if kind.needs_api_key() {
-        let key = Password::new("Please enter your API key:")
+        let Ok(key) = Password::new("Please enter your API key:")
             .with_display_mode(PasswordDisplayMode::Masked)
             .without_confirmation()
             .prompt()
-            .unwrap();
+        else {
+            println!("Exiting...");
+            return;
+        };
         let key = key.trim();
-        if key.is_empty() { None } else { Some(key.to_string()) }
+        if key.is_empty() {
+            None
+        } else {
+            Some(key.to_string())
+        }
     } else {
         None
     };
 
-    let model = Select::new("Which model do you want to use?", kind.models())
-        .prompt()
-        .unwrap();
+    let Ok(model) = Select::new("Which model do you want to use?", kind.models()).prompt() else {
+        println!("Exiting...");
+        return;
+    };
 
     let provider_details = ProviderConfig::new(kind, model.to_string(), api_key);
 
@@ -35,11 +50,16 @@ async fn main() {
     let mut history: Vec<ChatMessage> = Vec::new();
 
     loop {
-        
-        let input = Text::new("You:").prompt().unwrap();
+        let Ok(input) = Text::new("You:")
+            .with_autocomplete(MentionCompleter)
+            .prompt()
+        else {
+            println!("Exiting...");
+            break;
+        };
         let input = input.trim();
 
-        if input.is_empty(){
+        if input.is_empty() {
             continue;
         }
 
@@ -48,11 +68,10 @@ async fn main() {
             break;
         }
 
-        history.push(
-            ChatMessage::User(input.to_string())
-        );
+        // Where this turn starts, so a failed turn can be removed completely.
+        let turn_start = history.len();
+        history.push(ChatMessage::User(expand_mentions(input)));
 
-        
         // Inner loop: keep going while the model asks for tools.
         // It ends when the model answers with text (or after 10 rounds).
         for _ in 0..10 {
@@ -74,16 +93,18 @@ async fn main() {
                         });
                     }
                     history.push(ChatMessage::ToolCalls(calls));
-                    //This part is kinda wierd. why not push results? 
+                    //This part is kinda wierd. why not push results?
                     history.extend(results);
                 }
                 Err(e) => {
                     println!("Error {e}");
-                    history.pop();
+                    // pop() removed only the last item. After a tool round that left a
+                    // ToolCalls without its ToolResult, and OpenAI/Anthropic reject such a
+                    // history on every later request. Drop the whole turn instead.
+                    history.truncate(turn_start);
                     break;
                 }
             }
         }
     }
-
 }
