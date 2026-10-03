@@ -2,6 +2,12 @@ use super::{ChatMessage, ProviderConfig, Reply};
 use crate::tools::{ToolCall, ToolSpec};
 use serde_json::{Value, json};
 
+//There should be a way to dynamically call the models. but currently its static and points a place
+//at binary.
+pub(super) fn all_available_models() -> Vec<&'static str> {
+    vec!["gpt-6-luna"]
+}
+
 // Uses the Responses API (/v1/responses). Chat Completions rejects function tools
 // for reasoning models unless reasoning_effort is "none".
 pub(super) async fn send(

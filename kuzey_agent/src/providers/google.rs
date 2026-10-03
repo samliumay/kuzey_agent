@@ -11,6 +11,10 @@ use gemini_rust::{
 //json related operations at rust. 
 use serde_json::json;
 
+pub(super) fn all_available_models() -> Vec<&'static str> {
+    vec!["models/gemini-3.8-flash"]
+}
+
 //What this allows does? Also we need to re-write this when we have time with documentation.
 //Functiun signitures are interesting. they are vec at original but at here they were list
 //references. But you can use as list at here and again convert to vec for capabilities to grow. 
