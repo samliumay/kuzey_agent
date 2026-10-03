@@ -2,6 +2,10 @@ use super::{ProviderConfig, ChatMessage, Reply};
 use crate::tools::{ToolSpec, ToolCall};
 use serde_json::{json, Value};
 
+pub(super) fn all_available_models() -> Vec<&'static str> {
+    vec!["claude-haiku-4-5-20251001"]
+}
+
 //Still need to integrate the tools. For an example check ollama.rs"
 pub(super) async fn send(config: &ProviderConfig, history: &[ChatMessage], tools: &[ToolSpec]) -> Result<Reply, Box<dyn std::error::Error>> {
 

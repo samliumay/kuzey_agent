@@ -20,10 +20,10 @@ impl ProviderKind {
     /// Models offered in the menu for this provider.
     pub fn models(&self) -> Vec<&'static str> {
         match self {
-            Self::Ollama => vec!["qwen3.8:latest", "ornith:9b"],
-            Self::Anthropic => vec!["claude-haiku-4-5-20251001"],
-            Self::Google => vec!["models/gemini-3.8-flash"],
-            Self::OpenAI => vec!["gpt-6-luna"],
+            Self::Ollama => ollama::all_available_models(),
+            Self::Anthropic => anthropic::all_available_models(),
+            Self::Google => google::all_available_models(),
+            Self::OpenAI => openai::all_available_models(),
         }
     }
 
