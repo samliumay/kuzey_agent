@@ -1,4 +1,5 @@
 mod anthropic;
+mod deepseek;
 mod google;
 mod ollama;
 mod openai;
@@ -12,10 +13,17 @@ pub enum ProviderKind {
     Anthropic,
     Google,
     OpenAI,
+    Deepseek,
 }
 
 impl ProviderKind {
-    pub const ALL: [ProviderKind; 4] = [Self::Ollama, Self::Anthropic, Self::Google, Self::OpenAI];
+    pub const ALL: [ProviderKind; 5] = [
+        Self::Ollama,
+        Self::Anthropic,
+        Self::Google,
+        Self::OpenAI,
+        Self::Deepseek,
+    ];
 
     /// Models offered in the menu for this provider.
     pub fn models(&self) -> Vec<&'static str> {
@@ -24,6 +32,7 @@ impl ProviderKind {
             Self::Anthropic => anthropic::all_available_models(),
             Self::Google => google::all_available_models(),
             Self::OpenAI => openai::all_available_models(),
+            Self::Deepseek => deepseek::all_available_models(),
         }
     }
 
@@ -46,6 +55,7 @@ impl std::fmt::Display for ProviderKind {
             Self::Anthropic => "anthropic",
             Self::Google => "google",
             Self::OpenAI => "openai",
+            Self::Deepseek => "deepseek",
         };
         write!(f, "{name}")
     }
@@ -104,5 +114,6 @@ pub async fn send(
         ProviderKind::Ollama => ollama::send(config, history, tools).await,
         ProviderKind::OpenAI => openai::send(config, history, tools).await,
         ProviderKind::Anthropic => anthropic::send(config, history, tools).await,
+        ProviderKind::Deepseek => deepseek::send(config, history, tools).await,
     }
 }
